@@ -7,19 +7,23 @@ import tensorflow as tf
 
 
 class RNN:
-    def __init__(self, hidden_size, input_size, init_scale=0.1, activate_function=tf.tanh):
+    def __init__(self, hidden_size, input_size, init_scale=0.5, back_wards=False, activate_function=tf.tanh):
+        self.back_wards = back_wards
         self.activate_function = activate_function
         self.init_scale = init_scale
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.initializer = tf.truncated_normal_initializer(stddev=init_scale)
-        with tf.variable_scope('RNN'):
+        with tf.variable_scope('RNN_%d' % back_wards):
             self.W_hh = tf.get_variable('W_hh', shape=[self.hidden_size, self.hidden_size])
             self.W_ih = tf.get_variable('W_ih', shape=[self.input_size, self.hidden_size])
             self.b_h = tf.get_variable('b_h', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
 
     def __call__(self, inputs):
-        self._inputs = inputs
+        if self.back_wards:
+            self._inputs = tf.reverse(inputs, dims=[True, False])
+        else:
+            self._inputs = inputs
         with tf.variable_scope('RNN', initializer=self.initializer):
             self._states = self._compute_hidden()
 
@@ -83,25 +87,31 @@ class GRU(RNN):
         return hidden_state
 
 
-hidden_size = 280
-embedding_size = 300
-vocab_size = 1000
+if __name__ == '__main__':
 
-rnn = GRU(hidden_size=hidden_size, input_size=embedding_size)
-raw_inputs = tf.placeholder(tf.int32)
-W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=True,
-                name="embedding")
-_inputs = tf.nn.embedding_lookup(W, raw_inputs)
-rnn(inputs=_inputs)
-states = rnn.states
-sess = tf.Session()
-ss = tf.trainable_variables()
-for sss in ss:
-    print sss.name
-sess.run(tf.initialize_all_variables())
-print 'start done'
-for i in range(5000):
-    text = np.random.randint(0, 1000, size=74)
-    cc = sess.run(states, feed_dict={raw_inputs: text})
+    hidden_size = 280
+    embedding_size = 300
+    vocab_size = 1000
 
-print type(cc)
+    rnn = RNN(hidden_size=hidden_size, input_size=embedding_size)
+    rnn_back = RNN(hidden_size=hidden_size, back_wards=True, input_size=embedding_size)
+    raw_inputs = tf.placeholder(tf.int32)
+    W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=True,
+                    name="embedding")
+    _inputs = tf.nn.embedding_lookup(W, raw_inputs)
+    bacds = tf.reverse(_inputs, dims=[True, False])
+    rnn(inputs=_inputs)
+    rnn_back(inputs=_inputs)
+    states = rnn.states, rnn_back.states, rnn.inputs, rnn_back.inputs
+    sess = tf.Session()
+    ss = tf.trainable_variables()
+    for sss in ss:
+        print sss.name
+    sess.run(tf.initialize_all_variables())
+    print 'start done'
+    for i in range(500):
+        text = np.random.randint(0, 1000, size=150)
+        cc = sess.run(states, feed_dict={raw_inputs: text})
+        print cc
+
+    print type(cc)
