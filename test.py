@@ -20,7 +20,6 @@ raw_inputs = tf.placeholder(dtype=tf.int32)
 W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=False,
                 name="embedding")
 _inputs = tf.nn.embedding_lookup(W, raw_inputs)
-tf.nn.rnn_cell.BasicLSTMCell
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 

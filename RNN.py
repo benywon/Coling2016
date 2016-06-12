@@ -3,11 +3,14 @@ __author__ = 'Bingning Wang'
 __mail__ = 'research@bingning.wang'
 
 import numpy as np
-import tensorflow as tf
+
+from IAGRU import *
 
 
 class RNN:
-    def __init__(self, hidden_size, input_size, init_scale=0.5, back_wards=False, activate_function=tf.tanh):
+    def __init__(self, hidden_size, input_size, init_scale=0.5, only_return_last_state=False, back_wards=False,
+                 activate_function=tf.tanh):
+        self.only_return_last_state = only_return_last_state
         self.back_wards = back_wards
         self.activate_function = activate_function
         self.init_scale = init_scale
@@ -30,7 +33,11 @@ class RNN:
     def rnn_step(self, pre_state, x):
         pre_state = tf.reshape(pre_state, [1, self.hidden_size])
         x = tf.reshape(x, [1, self.input_size])
+        hidden_state = self._inner_rnn_step(pre_state, x)
+        h = tf.reshape(hidden_state, [self.hidden_size])
+        return h
 
+    def _inner_rnn_step(self, pre_state, x):
         hidden_temp = tf.matmul(pre_state, self.W_hh) + tf.matmul(x, self.W_ih) + self.b_h
         hidden_state = tf.tanh(hidden_temp)
         return hidden_state
@@ -57,7 +64,12 @@ class RNN:
     @property
     def states(self):
         """ A 2-D float32 Tensor with shape `[dynamic_duration, hidden_layer_size]`. """
-        return self._states
+        if self.back_wards:
+            states = tf.reverse(self._states, dims=[True, False])
+        else:
+            states = self._states
+
+        return states
 
 
 class GRU(RNN):
@@ -73,18 +85,20 @@ class GRU(RNN):
             self.b_r = tf.get_variable('b_r', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
             self.b_z = tf.get_variable('b_z', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
 
-    def rnn_step(self, pre_state, x):
-        hidden = tf.reshape(pre_state, [1, self.hidden_size])
-        x = tf.reshape(x, [1, self.input_size])
+    def _inner_rnn_step(self, pre_state, x):
+        zt, rt = self.get_zt_rt(pre_state, x)
+        rt_th1 = rt * pre_state
+        hidden_temp = tf.matmul(x, self.W_ih) + self.b_h
+        hidden_hat = self.inner_activation(hidden_temp + tf.matmul(rt_th1, self.W_hh))
+        hidden_state = (1 - zt) * pre_state + zt * hidden_hat
+        return hidden_state
+
+    def get_zt_rt(self, hidden, x):
         zt_temp = tf.matmul(hidden, self.W_hz) + tf.matmul(x, self.W_iz) + self.b_z
         rt_temp = tf.matmul(hidden, self.W_hr) + tf.matmul(x, self.W_ir) + self.b_r
         zt = self.activate_function(zt_temp)
         rt = self.activate_function(rt_temp)
-        rt_th1 = rt * hidden
-        hidden_temp = tf.matmul(x, self.W_ih) + self.b_h
-        hidden_hat = self.inner_activation(hidden_temp + tf.matmul(rt_th1, self.W_hh))
-        hidden_state = (1 - zt) * hidden + zt * hidden_hat
-        return hidden_state
+        return zt, rt
 
 
 if __name__ == '__main__':
@@ -93,16 +107,17 @@ if __name__ == '__main__':
     embedding_size = 300
     vocab_size = 1000
 
-    rnn = RNN(hidden_size=hidden_size, input_size=embedding_size)
+    rnn = InnerAttentionGRU(hidden_size=hidden_size, input_size=embedding_size)
     rnn_back = RNN(hidden_size=hidden_size, back_wards=True, input_size=embedding_size)
     raw_inputs = tf.placeholder(tf.int32)
     W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=True,
                     name="embedding")
     _inputs = tf.nn.embedding_lookup(W, raw_inputs)
-    bacds = tf.reverse(_inputs, dims=[True, False])
-    rnn(inputs=_inputs)
     rnn_back(inputs=_inputs)
-    states = rnn.states, rnn_back.states, rnn.inputs, rnn_back.inputs
+    states = rnn_back.states
+    previous = tf.gather(states, 0)
+    rnn.set_attention(previous)
+    rnn(inputs=_inputs)
     sess = tf.Session()
     ss = tf.trainable_variables()
     for sss in ss:
@@ -111,7 +126,7 @@ if __name__ == '__main__':
     print 'start done'
     for i in range(500):
         text = np.random.randint(0, 1000, size=150)
-        cc = sess.run(states, feed_dict={raw_inputs: text})
+        cc = sess.run([states, rnn.states, previous], feed_dict={raw_inputs: text})
         print cc
 
     print type(cc)
