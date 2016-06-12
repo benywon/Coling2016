@@ -121,7 +121,7 @@ if __name__ == '__main__':
     sess = tf.Session()
     ss = tf.trainable_variables()
     for sss in ss:
-        print sss.name
+        print sss.named
     sess.run(tf.initialize_all_variables())
     print 'start done'
     for i in range(500):
