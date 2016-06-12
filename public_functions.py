@@ -6,6 +6,7 @@ import re
 import threading
 
 import numpy as np
+import tensorflow as tf
 import theano
 import theano.tensor as T
 
@@ -194,3 +195,23 @@ class sort_utils(threading.Thread):
 def random_sample(in_list):
     length = len(in_list)
     return in_list[random.randint(0, length - 1)]
+
+
+def tensorflow_l1_norm(input_tensor):
+    abs_value = tf.abs(input_tensor)
+    return tf.reduce_sum(abs_value)
+
+
+def tensorflow_l2_norm(input_tensor):
+    square_value = tf.square(input_tensor)
+    return tf.sqrt(tf.reduce_sum(square_value))
+
+
+if __name__ == '__main__':
+    cc = tf.placeholder(tf.float32, shape=[2, 3])
+    bb = tensorflow_l2_norm(cc)
+    sess = tf.Session()
+    sess.run(tf.initialize_all_variables())
+    data = np.random.normal(size=[2, 3])
+    print data
+    print sess.run(bb, feed_dict={cc: data})
