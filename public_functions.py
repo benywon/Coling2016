@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import cPickle
 import os
+import random
 import re
 import threading
 
@@ -188,3 +189,8 @@ class sort_utils(threading.Thread):
 
     def run(self):  # Overwrite run() method, put what you want the thread do here
         self.sort_list()
+
+
+def random_sample(in_list):
+    length = len(in_list)
+    return in_list[random.randint(0, length - 1)]

@@ -77,7 +77,7 @@ class GRU(RNN):
         # init parent attributes
         RNN.__init__(self, **kwargs)
         self.inner_activation = inner_activation
-        with tf.variable_scope('GRU'):
+        with tf.variable_scope('GRU%d' % self.back_wards):
             self.W_hz = tf.get_variable('W_hz', shape=[self.hidden_size, self.hidden_size])
             self.W_iz = tf.get_variable('W_iz', shape=[self.input_size, self.hidden_size])
             self.W_ir = tf.get_variable('W_ir', shape=[self.input_size, self.hidden_size])

@@ -11,7 +11,7 @@ class InnerAttentionGRU(GRU):
     def __init__(self, **kwargs):
         # init parent attributes
         GRU.__init__(self, **kwargs)
-        with tf.variable_scope('IAGRU'):
+        with tf.variable_scope('IAGRU%d' % self.back_wards):
             self.M_qz = tf.get_variable('M_qz', shape=[self.hidden_size, self.hidden_size])
             self.M_qr = tf.get_variable('M_qr', shape=[self.hidden_size, self.hidden_size])
         self.attention = tf.Variable(tf.zeros(self.hidden_size))
