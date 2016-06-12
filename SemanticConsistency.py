@@ -30,9 +30,10 @@ class SemanticConsistencey(dataprocess):
             train_op = optimizer.minimize(model.loss)
             saver = tf.train.Saver(tf.all_variables())
             sess.run(tf.initialize_all_variables())
-            one_patch = self.train_data[300]
             print 'start train'
             for i in range(30):
+                print 'round\t%d' % i
+                loss_list = []
                 for j, patch in enumerate(self.train_data):
                     sample = patch[2][0:5]
                     feed_dict = {
@@ -43,11 +44,16 @@ class SemanticConsistencey(dataprocess):
                         model.sentence[4]: sample[4],
                     }
                     _, loss = sess.run([train_op, model.loss], feed_dict=feed_dict)
+                    loss_list.append(loss)
                     b = (
                         "Process\t" + str(j) + " in total:" + str(
                             len(self.train_data)) + ' loss: ' + str(
                             loss))
                     sys.stdout.write('\r' + b)
+                loss_mean = np.mean(loss_list)
+                print 'this round average loss=%f' % loss_mean
+                path = saver.save(sess, checkpoint_prefix)
+                print("Saved model checkpoint to {}\n".format(path))
 
     def restore_model(self):
         saver = tf.train.Saver()
