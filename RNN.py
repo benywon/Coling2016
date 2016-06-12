@@ -9,7 +9,7 @@ from IAGRU import *
 
 class RNN:
     def __init__(self, hidden_size, input_size, init_scale=0.5, only_return_last_state=False, back_wards=False,
-                 activate_function=tf.tanh):
+                 activate_function=tf.nn.sigmoid):
         self.only_return_last_state = only_return_last_state
         self.back_wards = back_wards
         self.activate_function = activate_function
@@ -17,10 +17,12 @@ class RNN:
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.initializer = tf.truncated_normal_initializer(stddev=init_scale)
-        with tf.variable_scope('RNN_%d' % back_wards):
-            self.W_hh = tf.get_variable('W_hh', shape=[self.hidden_size, self.hidden_size])
-            self.W_ih = tf.get_variable('W_ih', shape=[self.input_size, self.hidden_size])
-            self.b_h = tf.get_variable('b_h', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
+        with tf.name_scope("RNN_%d" % back_wards):
+            self.W_hh = tf.Variable(tf.truncated_normal(shape=[self.hidden_size, self.hidden_size], stddev=init_scale),
+                                    name='W_hh')
+            self.W_ih = tf.Variable(tf.truncated_normal(shape=[self.input_size, self.hidden_size], stddev=init_scale),
+                                    name='W_ih')
+            self.b_h = tf.Variable(tf.constant(0.0, shape=[self.hidden_size]), name='b_h')
 
     def __call__(self, inputs):
         if self.back_wards:
@@ -77,13 +79,22 @@ class GRU(RNN):
         # init parent attributes
         RNN.__init__(self, **kwargs)
         self.inner_activation = inner_activation
-        with tf.variable_scope('GRU%d' % self.back_wards):
-            self.W_hz = tf.get_variable('W_hz', shape=[self.hidden_size, self.hidden_size])
-            self.W_iz = tf.get_variable('W_iz', shape=[self.input_size, self.hidden_size])
-            self.W_ir = tf.get_variable('W_ir', shape=[self.input_size, self.hidden_size])
-            self.W_hr = tf.get_variable('W_hr', shape=[self.hidden_size, self.hidden_size])
-            self.b_r = tf.get_variable('b_r', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
-            self.b_z = tf.get_variable('b_z', shape=[self.hidden_size], initializer=tf.constant_initializer(0.0))
+        with tf.name_scope('GRU%d' % self.back_wards):
+            self.W_hz = tf.Variable(
+                tf.truncated_normal(shape=[self.hidden_size, self.hidden_size], stddev=self.init_scale),
+                name='W_hz')
+            self.W_iz = tf.Variable(
+                tf.truncated_normal(shape=[self.input_size, self.hidden_size], stddev=self.init_scale),
+                name='W_iz')
+            self.W_ir = tf.Variable(
+                tf.truncated_normal(shape=[self.input_size, self.hidden_size], stddev=self.init_scale),
+                name='W_ir')
+            self.W_hr = tf.Variable(
+                tf.truncated_normal(shape=[self.hidden_size, self.hidden_size], stddev=self.init_scale),
+                name='W_hr')
+
+            self.b_r = tf.Variable(tf.constant(0.0, shape=[self.hidden_size]), name='b_r')
+            self.b_z = tf.Variable(tf.constant(0.0, shape=[self.hidden_size]), name='b_z')
 
     def _inner_rnn_step(self, pre_state, x):
         zt, rt = self.get_zt_rt(pre_state, x)

@@ -26,10 +26,9 @@ class SemanticConsistencey(dataprocess):
             sess = tf.Session()
             model = Model(embedding_matrix=self.wordEmbedding, train_embedding=False)
             # self.restore_model()
-            optimizer = tf.train.AdamOptimizer(learning_rate=0.1)
-            train_op = optimizer.minimize(model.loss)
             saver = tf.train.Saver(tf.all_variables())
             sess.run(tf.initialize_all_variables())
+            # one_patch=self.train_data[129]
             print 'start train'
             for i in range(30):
                 print 'round\t%d' % i
@@ -43,7 +42,7 @@ class SemanticConsistencey(dataprocess):
                         model.sentence[3]: sample[3],
                         model.sentence[4]: sample[4],
                     }
-                    _, loss = sess.run([train_op, model.loss], feed_dict=feed_dict)
+                    _, loss = sess.run([model.train, model.loss], feed_dict=feed_dict)
                     loss_list.append(loss)
                     b = (
                         "Process\t" + str(j) + " in total:" + str(
@@ -67,15 +66,19 @@ class SemanticConsistencey(dataprocess):
 class Model:
     def __init__(self, embedding_matrix, margin=0.2, hidden_size=150, embedding_size=100, learning_rate=0.01,
                  train_embedding=False):
+        self.embedding_size = embedding_size
         self.margin = margin
         self.hidden_size = hidden_size
         self.learning_rate = learning_rate
         self.sentence = [tf.placeholder(dtype=tf.int32, name='sentence1')] * 5
         with tf.variable_scope("embedding"):
             self.embedding_matrix = tf.Variable(embedding_matrix, name='EmbeddingMatrix', trainable=train_embedding)
+        self._load_function()
+
+    def _load_function(self):
         doc_sentence_embedding = [tf.nn.embedding_lookup(self.embedding_matrix, raw_inputs) for raw_inputs in
                                   self.sentence]
-        forward_iagru = InnerAttentionGRU(hidden_size=hidden_size, input_size=embedding_size)
+        forward_iagru = InnerAttentionGRU(hidden_size=self.hidden_size, input_size=self.embedding_size)
 
         doc_sentence_representation = []
         for i, sentence_embedding in enumerate(doc_sentence_embedding):
@@ -96,11 +99,11 @@ class Model:
         for j in range(1, 5):
             for i in range(j):
                 self.loss += calc_los_pair(sentence_norm[i], sentence_norm[j])
-        optimizer = tf.train.AdadeltaOptimizer()
-        global_step = tf.Variable(0, name="global_step", trainable=False)
-        self.train = optimizer.minimize(self.loss, global_step=global_step)
+        optimizer = tf.train.RMSPropOptimizer(learning_rate=0.05)
+        self.train = optimizer.minimize(self.loss)
 
-    def get_RNN_representation(self, input_sentence_representation):
+    @staticmethod
+    def get_RNN_representation(input_sentence_representation):
         return tf.reduce_mean(input_sentence_representation, reduction_indices=0)
 
 
