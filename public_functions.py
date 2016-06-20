@@ -113,7 +113,7 @@ def batch_cosine(x, y):
     return T.batched_dot(x, y) / (T.sqrt(T.sum(x ** 2)) * T.sqrt(T.sum(y ** 2)))
 
 
-def padding(sequence, pads=0, max_len=None, dtype='int32', return_matrix=False):
+def padding(sequence, pads=0, max_len=None, dtype='int32', return_matrix_for_size=False):
     v_length = [len(x) for x in sequence]  # every sentence length
     max_len = max(v_length) if max_len is None else max_len
     v_length = map(lambda z: z if z <= max_len else max_len, v_length)
@@ -121,7 +121,7 @@ def padding(sequence, pads=0, max_len=None, dtype='int32', return_matrix=False):
     for idx, s in enumerate(sequence):
         trunc = s[:max_len]
         x[idx, :len(trunc)] = trunc
-    if return_matrix:
+    if return_matrix_for_size:
         v_matrix = np.asmatrix([map(lambda item: 1 if item < line else 0, range(max_len)) for line in v_length],
                                dtype=dtype)
         return x, v_matrix
@@ -132,6 +132,11 @@ def pad_index2distribution(index, classes):
     li = [0] * classes
     li[index] = 1
     return li
+
+
+def gen_yes_no_array(num_real, max_length):
+    keep = [1] * num_real + [0] * (max_length - num_real)
+    return np.asarray(keep, dtype=np.bool)
 
 
 def get_dir_files(director):
@@ -208,10 +213,4 @@ def tensorflow_l2_norm(input_tensor):
 
 
 if __name__ == '__main__':
-    cc = tf.placeholder(tf.float32, shape=[2, 3])
-    bb = tensorflow_l2_norm(cc)
-    sess = tf.Session()
-    sess.run(tf.initialize_all_variables())
-    data = np.random.normal(size=[2, 3])
-    print data
-    print sess.run(bb, feed_dict={cc: data})
+    print gen_yes_no_array(19, 40)
