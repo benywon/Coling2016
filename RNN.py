@@ -3,14 +3,15 @@ __author__ = 'Bingning Wang'
 __mail__ = 'research@bingning.wang'
 
 import numpy as np
-
-from IAGRU import *
+import tensorflow as tf
 
 
 class RNN:
-    def __init__(self, hidden_size, input_size, init_scale=0.5, only_return_last_state=False, back_wards=False,
+    def __init__(self, hidden_size, input_size, init_scale=0.5, return_all_hidden_states=False, back_wards=False,
+                 return_method='ave',
                  activate_function=tf.nn.sigmoid):
-        self.only_return_last_state = only_return_last_state
+        self.return_method = return_method
+        self.return_all_hidden_states = return_all_hidden_states
         self.back_wards = back_wards
         self.activate_function = activate_function
         self.init_scale = init_scale
@@ -70,7 +71,15 @@ class RNN:
             states = tf.reverse(self._states, dims=[True, False])
         else:
             states = self._states
-
+        if not self.return_all_hidden_states:
+            ret = None
+            if self.return_method == 'ave':
+                ret = tf.reduce_mean(states, reduction_indices=0)
+            elif self.return_method == 'max':
+                ret = tf.reduce_max(states, reduction_indices=0)
+            else:  # the last hidden variable
+                ret = tf.gather(states, tf.shape(states)[0] - 1)
+            return ret
         return states
 
 
@@ -118,7 +127,7 @@ if __name__ == '__main__':
     embedding_size = 300
     vocab_size = 1000
 
-    rnn = InnerAttentionGRU(hidden_size=hidden_size, input_size=embedding_size)
+    rnn = RNN(hidden_size=hidden_size, input_size=embedding_size)
     rnn_back = RNN(hidden_size=hidden_size, back_wards=True, input_size=embedding_size)
     raw_inputs = tf.placeholder(tf.int32)
     W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=True,

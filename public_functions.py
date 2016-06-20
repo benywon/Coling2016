@@ -122,8 +122,8 @@ def padding(sequence, pads=0, max_len=None, dtype='int32', return_matrix_for_siz
         trunc = s[:max_len]
         x[idx, :len(trunc)] = trunc
     if return_matrix_for_size:
-        v_matrix = np.asmatrix([map(lambda item: 1 if item < line else 0, range(max_len)) for line in v_length],
-                               dtype=dtype)
+        v_matrix = np.asanyarray([map(lambda item: 1 if item < line else 0, range(max_len)) for line in v_length],
+                                 dtype=dtype)
         return x, v_matrix
     return x, np.asarray(v_length, dtype='int32')
 
