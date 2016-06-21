@@ -7,7 +7,7 @@ import tensorflow as tf
 
 
 class RNN:
-    def __init__(self, hidden_size, input_size, init_scale=0.5, return_all_hidden_states=False, back_wards=False,
+    def __init__(self, hidden_size, input_size, init_scale=0.5, return_all_hidden_states=True, back_wards=False,
                  return_method='ave',
                  activate_function=tf.nn.sigmoid):
         self.return_method = return_method
@@ -32,6 +32,7 @@ class RNN:
             self._inputs = inputs
         with tf.variable_scope('RNN', initializer=self.initializer):
             self._states = self._compute_hidden()
+        return self.states
 
     def rnn_step(self, pre_state, x):
         pre_state = tf.reshape(pre_state, [1, self.hidden_size])
@@ -39,6 +40,9 @@ class RNN:
         hidden_state = self._inner_rnn_step(pre_state, x)
         h = tf.reshape(hidden_state, [self.hidden_size])
         return h
+
+    def set_return_method(self, ret_method):
+        self.return_method = ret_method
 
     def _inner_rnn_step(self, pre_state, x):
         hidden_temp = tf.matmul(pre_state, self.W_hh) + tf.matmul(x, self.W_ih) + self.b_h
@@ -72,7 +76,6 @@ class RNN:
         else:
             states = self._states
         if not self.return_all_hidden_states:
-            ret = None
             if self.return_method == 'ave':
                 ret = tf.reduce_mean(states, reduction_indices=0)
             elif self.return_method == 'max':

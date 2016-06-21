@@ -109,6 +109,10 @@ def cosine(x, y):
     return T.dot(x, y) / (T.sqrt(T.sum(x ** 2)) * T.sqrt(T.sum(y ** 2)))
 
 
+def cosine_tf(x, y):
+    return dot_vectors(x, y) / (tensorflow_l2_norm(x) * tensorflow_l2_norm(y))
+
+
 def batch_cosine(x, y):
     return T.batched_dot(x, y) / (T.sqrt(T.sum(x ** 2)) * T.sqrt(T.sum(y ** 2)))
 
@@ -200,6 +204,13 @@ class sort_utils(threading.Thread):
 def random_sample(in_list):
     length = len(in_list)
     return in_list[random.randint(0, length - 1)]
+
+
+def dot_vectors(vec1, vec2):
+    vec1 = tf.transpose(tf.reshape(vec1, [1, tf.shape(vec1)[0]]))
+    vec2 = tf.reshape(vec2, [1, tf.shape(vec2)[0]])
+    res = tf.matmul(vec2, vec1)
+    return tf.gather(tf.gather(res, 0), 0)
 
 
 def tensorflow_l1_norm(input_tensor):

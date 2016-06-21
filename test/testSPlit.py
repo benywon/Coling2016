@@ -30,22 +30,10 @@ for i in range(14):
     jj = tf.boolean_mask(ll, pp)
     output.append(jj)
 
-rnn = RNN(hidden_size=hidden_size, back_wards=True, return_all_hidden_states=True, input_size=embedding_size)
+rnn = RNN(hidden_size=hidden_size, back_wards=True, return_all_hidden_states=False, return_method='max',
+          input_size=embedding_size)
 
 
-# ttt = []
-#
-#
-def modles(pre, i):
-    ll = tf.gather(inputs_value_original, i)
-    pp = tf.gather(inputs_value_original_index, i)
-    jj = tf.boolean_mask(ll, pp)
-    rnn(inputs=_inputs)
-    states = rnn.states
-    return states
-
-
-ccc = tf.scan(modles, tf.range(number_inputs), initializer=tf.zeros([hidden_size]))
 
 W = tf.Variable(tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0), trainable=True,
                 name="embedding")
